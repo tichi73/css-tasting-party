@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
 <meta charset="UTF-8">
-<title>CSS Flexible Box Layout Module Demo</title>
+<title>CSS3 Flexible Box Layout Module Demo</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.10/jquery-ui.min.js"></script>
+<script src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
 <script src="http://twitter.github.com/bootstrap/assets/js/bootstrap.min.js"></script>
 <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.10/themes/base/jquery-ui.css">
 <link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css">
@@ -12,59 +13,599 @@ body {
 	margin-left: 10px;
 	margin-right: 10px;
 }
-.A {
-    background: red;
-    width: 140px;
-    height: 140px;
-    font-size: 100px;
-    line-height: 100px;
-}
-.B {
-    background: green;
-    width: 120px;
-    height: 120px;
-    font-size: 60px;
-    line-height: 60px;
-}
-.C {
-    background: blue;
-    width: 100px;
-    height: 100px;
-    font-size: 30px;
-    line-height: 30px;
-}
 .flex-item {
-    font-weight: bold;
-    color: white;
+	color: white;
+	font-weight: bold;
+	text-align: center;
+	line-height: 100%;
+	overflow: hidden;
 }
 .flex-container {
-    display: -webkit-flex;
-    display: -moz-flex;
-    display: -o-flex;
-    display: -ms-flex;
-    display: flex;
-    width: 100%;
-    height: 100%;
-    background: gray;
+	display: -moz-box;		/* Firefox */
+	display: -ms-flexbox;	/* IE10 */
+	display: -webkit-box;	/* Safari */
+	display: -webkit-flex;	/* Chrome, WebKit */
+	display: box;
+	display: flexbox;
+	display: flex;
+
+	width: 100%;
+	height: 100%;
+	background-color: gray;
 }
 .outer-container {
-    width: 480px;
-    height: 480px;
+	width: 640px;
+	height: 320px;
 }
 .prop-name {
 	padding-left: 10px;
 }
-.row {
+.row-fluid {
 	font-size: 12pt;
-	line-height: 26pt;
+	line-height: 24pt;
+}
+.version-btn {
+	text-align: left;
 }
 input[type="text"] {
 	margin-bottom: auto;
 	width: auto;
 }
 </style>
+<script id="props-template" type="text/x-jquery-tmpl"> 
+	<div class="row-fluid ${$item.class}">
+	<div class="span2 prop-name">${$item.title}<a href="${$item.url}#${property}">${property}</a></div>
+	<div class="span10">
+	{{if type=="radio"}}
+		<span class="btn-group" data-prop="${property}" data-target="${$item.target}" data-toggle="buttons-radio">
+			{{each values}}
+				<button class="btn prop-btn ${$value.class}">${$value.value}</button>
+			{{/each}}
+		</span>
+	{{/if}}
+	{{each extra_props}}
+		<span class="prop-name"><a href="${$item.url}#${$value.property}">${$value.property}</a></span>
+
+		{{if $value.type=="text"}}
+			<span class="btn-group">
+			<input type="text" class="prop-text" size="${$value.size}" placeholder="${$value.value}" data-prop="${$value.property}" data-target="${$item.target}"></input>
+			</span>
+		{{/if}}
+
+		{{if $value.type=="text-dropdown"}}
+			<span class="btn-group">
+				<input type="text" class="prop-text dropdown-target" size="${$value.size}" placeholder="${$value.value}" data-prop="${$value.property}" data-target="${$item.target}"></input>
+				<button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+				<ul class="dropdown-menu">
+					{{each $value.values}}
+					<li><a>${$value}</a></li>
+					{{/each}}
+				</ul>
+			</span>
+		{{/if}}
+	{{/each}}
+	</div>
+	</div>
+</script>
+
 <script>
+var css_spec = {
+	//----------------------------------------------------------------------------
+	'CR-css3-flexbox-20120918' : {
+		url: 'http://www.w3.org/TR/2012/CR-css3-flexbox-20120918/',
+		supported: 'Chrome, WebKit',
+		container_props: [
+			{
+				// 5.1. Flex Flow Direction: the ‘flex-direction’ property
+				property: 'flex-direction',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'row', class: 'btn-info' },
+					{ value: 'row-reverse' },
+					{ value: 'column' },
+					{ value: 'column-reverse' },
+				],
+			},{
+				// 5.2. Flex Line Wrapping: the ‘flex-wrap’ property
+				property: 'flex-wrap',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'nowrap', class: 'btn-info' },
+					{ value: 'wrap' },
+					{ value: 'wrap-reverse' },
+				],
+			},{
+				// 8.2. Axis Alignment: the ‘justify-content’ property
+				property: 'justify-content',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'flex-start', class: 'btn-info' },
+					{ value: 'flex-end' },
+					{ value: 'center' },
+					{ value: 'space-between' },
+					{ value: 'space-around' },
+				],
+			},{
+				// 8.3. Cross-axis Alignment: the ‘align-items’ and ‘align-self’ properties
+				property: 'align-items',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'flex-start' },
+					{ value: 'flex-end' },
+					{ value: 'center' },
+					{ value: 'baseline' },
+					{ value: 'stretch', class: 'btn-info' },
+				],
+			},{
+				// 8.4. Packing Flex Lines: the ‘align-content’ property
+				property: 'align-content',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'flex-start' },
+					{ value: 'flex-end' },
+					{ value: 'center' },
+					{ value: 'space-between' },
+					{ value: 'space-around' },
+					{ value: 'stretch', class: 'btn-info' },
+				],
+			}
+		],
+		items_props: {
+			// 8.3. Cross-axis Alignment: the ‘align-items’ and ‘align-self’ properties
+			property: 'align-self',
+			type: 'radio',
+			values: [
+				{ value: '(none)', class: 'reset active' },
+				{ value: 'auto', class: 'btn-info' },
+				{ value: 'flex-start' },
+				{ value: 'flex-end' },
+				{ value: 'center' },
+				{ value: 'baseline' },
+				{ value: 'stretch' },
+			],
+			extra_props: [
+				{
+					// 5.4. Display Order: the ‘order’ property
+					property: 'order',
+					type: 'text',
+					size: 2,
+					value: '0',
+					class: 'prop-text',
+				},{
+					// 7.1. The ‘flex’ Shorthand
+					property: 'flex',
+					type: 'text-dropdown',
+					size: 8,
+					value: 'none',
+					class: 'prop-text',
+					values: ['0 0 auto (none)', '0 1 auto (initial)', '1 0 auto', '1 1 auto (auto)'],
+				},
+			],
+		},
+	},
+	//----------------------------------------------------------------------------
+	'WD-css3-flexbox-20120612' : {
+		url: 'http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/',
+		supported: 'Chrome, WebKit',
+		container_props: [
+			{
+				// 5.1. Flex Flow Direction: the ‘flex-direction’ property
+				property: 'flex-direction',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'row', class: 'btn-info' },
+					{ value: 'row-reverse' },
+					{ value: 'column' },
+					{ value: 'column-reverse' },
+				],
+			},{
+				// 5.2. Flex Line Wrapping: the ‘flex-wrap’ property
+				property: 'flex-wrap',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'nowrap', class: 'btn-info' },
+					{ value: 'wrap' },
+					{ value: 'wrap-reverse' },
+				],
+			},{
+				// 8.2. Axis Alignment: the ‘justify-content’ property
+				property: 'justify-content',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'flex-start', class: 'btn-info' },
+					{ value: 'flex-end' },
+					{ value: 'center' },
+					{ value: 'space-between' },
+					{ value: 'space-around' },
+				],
+			},{
+				// 8.3. Cross-axis Alignment: the ‘align-items’ and ‘align-self’ properties
+				property: 'align-items',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'flex-start' },
+					{ value: 'flex-end' },
+					{ value: 'center' },
+					{ value: 'baseline' },
+					{ value: 'stretch', class: 'btn-info' },
+				],
+			},{
+				// 8.4. The ‘align-content’ property
+				property: 'align-content',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'flex-start' },
+					{ value: 'flex-end' },
+					{ value: 'center' },
+					{ value: 'space-between' },
+					{ value: 'space-around' },
+					{ value: 'stretch', class: 'btn-info' },
+				],
+			}
+		],
+		items_props: {
+			// 8.3. Cross-axis Alignment: the ‘align-items’ and ‘align-self’ properties
+			property: 'align-self',
+			type: 'radio',
+			values: [
+				{ value: '(none)', class: 'reset active' },
+				{ value: 'auto', class: 'btn-info' },
+				{ value: 'flex-start' },
+				{ value: 'flex-end' },
+				{ value: 'center' },
+				{ value: 'baseline' },
+				{ value: 'stretch' },
+			],
+			extra_props: [
+				{
+					// 5.4. Display Order: the ‘order’ property
+					property: 'order',
+					type: 'text',
+					size: 2,
+					value: '0',
+					class: 'prop-text',
+				},{
+					// 7.1. The ‘flex’ Shorthand
+					property: 'flex',
+					type: 'text-dropdown',
+					size: 8,
+					value: 'none',
+					class: 'prop-text',
+					values: ['0 0 auto (none)', '0 1 auto (initial)', '1 0 auto', '1 1 auto (auto)'],
+				},
+			],
+		},
+	},
+	//----------------------------------------------------------------------------
+	'WD-css3-flexbox-20120322' : {
+		url: 'http://www.w3.org/TR/2012/WD-css3-flexbox-20120322/',
+		supported: 'IE10',
+		container_props: [
+			{
+				// 6.1. Flexbox Flow Direction: the ‘flex-direction’ property
+				property: 'flex-direction',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'row', class: 'btn-info' },
+					{ value: 'row-reverse' },
+					{ value: 'column' },
+					{ value: 'column-reverse' },
+				],
+			},{
+				// 6.2. Flexbox Wrapping: the ‘flex-wrap’ property
+				property: 'flex-wrap',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'nowrap', class: 'btn-info' },
+					{ value: 'wrap' },
+					{ value: 'wrap-reverse' },
+				],
+			},{
+				// 8.1. Axis Alignment: the ‘flex-pack’ property
+				property: 'flex-pack',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start', class: 'btn-info' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'justify' },
+					{ value: 'distribute' },
+				],
+			},{
+				// 8.2. Cross Axis Alignment: the ‘flex-align’ and ‘flex-item-align’ properties
+				property: 'flex-align',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'baseline' },
+					{ value: 'stretch', class: 'btn-info' },
+				],
+			},{
+				// 8.4. ‘flex-line-pack’ property
+				property: 'flex-line-pack',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'justify' },
+					{ value: 'distribute' },
+					{ value: 'stretch', class: 'btn-info' },
+				],
+			}
+		],
+		items_props: {
+			// 8.2. Cross Axis Alignment: the ‘flex-align’ and ‘flex-item-align’ properties
+			property: 'flex-item-align',
+			type: 'radio',
+			values: [
+				{ value: '(none)', class: 'reset active' },
+				{ value: 'auto', class: 'btn-info' },
+				{ value: 'start' },
+				{ value: 'end' },
+				{ value: 'center' },
+				{ value: 'baseline' },
+				{ value: 'stretch' },
+			],
+			extra_props: [
+				{
+					// 6.4. Display Order: the ‘flex-order’ property
+					property: 'flex-order',
+					type: 'text',
+					size: 2,
+					value: '0',
+					class: 'prop-text',
+				},{
+					// 7. Flexibility: the ‘flex’ property
+					property: 'flex',
+					type: 'text-dropdown',
+					size: 8,
+					value: 'none',
+					class: 'prop-text',
+					values: ['0 0 auto (none)', '0 1 auto', '1 0 auto', '1 1 auto'],
+				},
+			],
+		},
+	},
+	//----------------------------------------------------------------------------
+	'WD-css3-flexbox-20111129' : {
+		url: 'http://www.w3.org/TR/2011/WD-css3-flexbox-20111129/',
+		supported: '???',
+		container_props: [
+			{
+				// 3.1. Flexbox Flow Direction: the ‘flex-flow’ property
+				property: 'flex-flow',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'row', class: 'btn-info' },
+					{ value: 'row-reverse' },
+					{ value: 'column' },
+					{ value: 'column-reverse' },
+					// TODO: [ row | row-reverse | column | column-reverse ] [ wrap | wrap-reverse ]?
+					{ value: 'wrap' },
+					{ value: 'wrap-reverse' },
+				],
+			},{
+				// 5.1. Main Axis Alignment: the ‘flex-pack’ property
+				property: 'flex-pack',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start', class: 'btn-info' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'justify' },
+				],
+			},{
+				// 6.1. ‘flex-line-pack’ property
+				property: 'flex-line-pack',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start', class: 'btn-info' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'justify' },
+				],
+			}
+		],
+		items_props: {
+			// 5.2. Cross Axis Alignment: the ‘flex-align’ property
+			property: 'flex-align',
+			type: 'radio',
+			values: [
+				{ value: '(none)', class: 'reset active' },
+				{ value: 'start' },
+				{ value: 'end' },
+				{ value: 'center' },
+				{ value: 'baseline' },
+				{ value: 'stretch', class: 'btn-info' },
+			],
+			extra_props: [
+				{
+					// 3.2. Display Order: the ‘flex-order’ property
+					property: 'flex-order',
+					type: 'text',
+					size: 2,
+					value: '0',
+					class: 'prop-text',
+				},
+			],
+		},
+	},
+	//----------------------------------------------------------------------------
+	'WD-css3-flexbox-20110322' : {
+		url: 'http://www.w3.org/TR/2011/WD-css3-flexbox-20110322/',
+		supported: '???',
+		container_props: [
+			{
+				// 3. Flexbox Direction: the ‘flex-direction’ property
+				property: 'flex-direction',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'lr' },
+					{ value: 'rl' },
+					{ value: 'tb' },
+					{ value: 'bt' },
+					{ value: 'inline', class: 'btn-info' },
+					{ value: 'inline-reverse' },
+					{ value: 'block' },
+					{ value: 'block-reverse' },
+				],
+			},{
+				// 6. The ‘flex-pack’ property
+				property: 'flex-pack',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start', class: 'btn-info' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'justify' },
+				],
+			},{
+				// 7. The ‘flex-align’ property
+				property: 'flex-align',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'auto', class: 'btn-info' },
+					{ value: 'baseline' },
+				],
+			}
+		],
+		items_props: {
+			property: '',
+			type: 'none',
+			extra_props: [
+				{
+					// 4. Display Order: the ‘flex-order’ property
+					property: 'flex-order',
+					type: 'text',
+					size: 2,
+					value: '1',
+					class: 'prop-text',
+				},
+			],
+		},
+	},
+	//----------------------------------------------------------------------------
+	'WD-css3-flexbox-20090723' : {
+		url: 'http://www.w3.org/TR/2009/WD-css3-flexbox-20090723/',
+		supported: 'Firefox, Safari',
+		container_props: [
+			{
+				// 2 Orientation
+				property: 'box-orient',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'horizontal' },
+					{ value: 'vertical' },
+					{ value: 'inline-axis', class: 'btn-info' },
+					{ value: 'block-axis' },
+					{ value: 'inherit' },
+				],
+			},{
+				// 3 Display order
+				property: 'box-direction',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'normal', class: 'btn-info' },
+					{ value: 'reverse' },
+					{ value: 'inherit' },
+				],
+			},{
+				// 4 Alignment
+				property: 'box-align',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'baseline' },
+					{ value: 'stretch', class: 'btn-info' },
+				],
+			},{
+				// 6 Packing along the box axis
+				property: 'box-pack',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'start', class: 'btn-info' },
+					{ value: 'end' },
+					{ value: 'center' },
+					{ value: 'justify' },
+				],
+			},{
+				// 7 Multiple Lines
+				property: 'box-lines',
+				type: 'radio',
+				values: [
+					{ value: '(none)', class: 'reset active' },
+					{ value: 'single', class: 'btn-info' },
+					{ value: 'multiple' },
+				],
+			}
+		],
+		items_props: {
+			property: '',
+			type: 'none',
+			extra_props: [
+				{
+					// 3 Display order
+					property: 'box-ordinal-group',
+					type: 'text',
+					size: 2,
+					value: '1',
+					class: 'prop-text',
+				},{
+					// 5 Flexibility
+					property: 'box-flex',
+					type: 'text',
+					size: 4,
+					value: '0.0',
+					class: 'prop-text',
+				},{
+					// 5 Flexibility
+					property: 'box-flex-group',
+					type: 'text',
+					size: 2,
+					value: '1',
+					class: 'prop-text',
+				},
+			],
+		},
+	},
+};
+
+var items_num = 0;
+var items_max = 26;		// A..Z
+var next_label = 'A';
+var resizable = false;
 var css_prefix = ['-webkit-', '-moz-', '-o-', '-ms-', ''];
+
 function set_css(target, key, value) {
 	var prop = {};
 	for (var i=0 ; i<css_prefix.length ; i++) {
@@ -72,163 +613,192 @@ function set_css(target, key, value) {
 	}
 	$(target).css(prop);
 }
+function random_color() {
+	var r = Math.floor(Math.random() * 200);
+	var g = Math.floor(Math.random() * 200);
+	var b = Math.floor(Math.random() * 200);
+	return 'rgb(' + r + ',' + g + ','+ b + ')';
+}
+function random_size() {
+	return (Math.floor(Math.random() * 200) + 20) + "px";
+}
+function reset_props() {
+	$('button.reset').click();
+	$('input.prop-text').val('').trigger('keyup');
+}
+function add_item(label, background_color, size, add_props) {
+	if (!label)
+		label = next_label
+	next_label = String.fromCharCode(label.charCodeAt(0) + 1)
+	if (!background_color)
+		background_color = random_color()
+	if (!size)
+		size = random_size();
+	var item = $('<div>')
+		.appendTo('.flex-container')
+		.text(label)
+		.attr('class', "flex-item " + label)
+		.css({ 'background-color': background_color, width: size, height: size })
+		.trigger('resize');
+	if (resizable)
+		item.resizable();
+	if (add_props) {
+		for (var spec_version in css_spec) {
+			var spec = css_spec[spec_version];
+			$('#props-template').tmpl(
+				spec.items_props, {
+					class: spec_version, 
+					title: '(' + label + ') ', 
+					target: '.' + label ,
+					url: spec.url
+				}).appendTo('#items_props');
+		}
+	}
+	items_num++;
+	if (items_num >= items_max) {
+		$('#btn_add_item').attr("disabled","disabled");
+	}
+}
+function shuffle_size() {
+	$('.flex-item').each(function(){
+		size = random_size();
+		$(this).css({width: size, height: size});
+	});
+	$('.flex-item').trigger("resize");
+}
+function select_version(version) {
+	for (var spec_version in css_spec) {
+		if (spec_version == version) {
+			$('.' + spec_version).show();
+		} else {
+			$('.' + spec_version).hide();
+		}
+	}
+	reset_props();
+}
 function init_view() {
-	$('.btn-group > .btn').click(function(e){
+	for (var spec_version in css_spec) {
+		var spec = css_spec[spec_version];
+		$('<li>').append(
+			$('<a>')
+				.attr('class', 'version-btn')
+				.data('version', spec_version)
+				.text(spec_version + ' (' + spec.supported + ')')
+			).appendTo('#version_select');
+
+		$('#props-template').tmpl(
+			spec.container_props, {
+				class: spec_version,
+				target: '.flex-container',
+				url: spec.url
+			}).appendTo('#container_props');
+	}
+	$('.version-btn').click(function(e){
+		var version = $(this).data('version');
+		$('#selected_version').text($(this).text());
+		select_version(version);
+	});
+	$('.dropdown-menu > li > a').live('click', function(e){
+		var thisNode = $(this);
+		var value = thisNode.text().replace(/\s*\(.*\)\s*/,'');
+		var target = thisNode.closest('.btn-group');
+		$('input.prop-text', target).val(value).trigger('keyup');
+	});
+	$('button.prop-btn').live('click', function(e){
 		var parentNode = $(this.parentNode);
 		var key = parentNode.data('prop');
 		var target = parentNode.data('target');
 		var value = $(this).text();
-		if (value.match(/^\(/))
-			value = '';
+		value = value.replace(/\s*\(.*\)\s*/,'');
 		set_css(target, key, value);
 	});
-	$('.prop-text').keyup(function(e){
+	$('input.prop-text').live('keyup', function(e){
 		var thisNode = $(this);
 		var key = thisNode.data('prop');
 		var target = thisNode.data('target');
 		var value = thisNode.val();
 		set_css(target, key, value);
 	});
-	$(".ui-widget-content").resizable();
+	$('.flex-item').live('resize', function(e){
+		var thisNode = $(this);
+		var width = thisNode.width();
+		var height = thisNode.height();
+		thisNode.css({
+			'font-size': Math.floor(height / 2) + 'px',
+			'line-height': height + 'px',
+		});
+		//console.log("resize: " + width + "x" + height + " class=" + thisNode.attr("class"));
+	});
+	$('#btn_reset_props').click(function(e){
+		reset_props();
+	});
+	$('#btn_add_item').click(function(e){
+		add_item();
+	});
+	$('#btn_shuffle_size').click(function(e){
+		shuffle_size();
+	});
+	$('#btn_resizable').click(function(e){
+		if (!resizable) {
+			$('.flex-item').resizable();
+			$(this).attr("disabled","disabled");
+			resizable = true;
+		}
+	});
+	$('.outer-container').resizable();
+}
+function init_items() {
+	add_item('A', 'red',   '140px', true);
+	add_item('B', 'green', '120px', true);
+	add_item('C', 'blue',  '100px', true);
 }
 $(document).ready(function(){
-   init_view();
+	init_view();
+	init_items();
+	$('.version-btn')[0].click();
+	reset_props();
 });
 </script>
 <body>
-<h1>CSS Flexible Box Layout Module Demo</h1>
+<h1>CSS3 Flexible Box Layout Module Demo</h1>
 <div>
-<a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/">CSS Flexbox layout</a> Demo by @tichi73
+<a href="http://www.w3.org/TR/css3-flexbox/">CSS3 Flexbox layout</a> Demo by @tichi73
 </div>
 <div>
-update: 2012/09/17
+update: 2012/09/28
 </div>
 
 <h2>Layout Demo</h2>
-<div class="outer-container ui-widget-content">
+<div class="btn-toolbar">
+<button class="btn" id="btn_reset_props">Reset properties</button>
+<button class="btn" id="btn_add_item">Add item</button>
+<button class="btn" id="btn_shuffle_size">Shuffle size</button>
+<button class="btn" id="btn_resizable">Resizable</button>
+</div>
+<div class="outer-container">
 	<div class="flex-container">
-		<div class="flex-item ui-widget-content A">A</div>
-		<div class="flex-item ui-widget-content B">B</div>
-		<div class="flex-item ui-widget-content C">C</div>
 	</div>
 </div>
-<br>
-<div class="alert">
-Tips: Container and items that are resizable.
+
+<h2>Specification version</h2>
+<div class="row-fluid">
+	<div class="span2 prop-name">Select version</div>
+	<div class="span10">
+		<div class="btn-group">
+			<button class="btn dropdown-target" id="selected_version">select version</button>
+			<button class="btn dropdown-toggle" data-toggle="dropdown">
+				<span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu" id="version_select">
+			</ul>
+		</div>
+	</div>
 </div>
 
 <h2>Flex containers property</h2>
-<div class="row">
-<div class="span2 prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#flex-direction">flex-direction</a></div>
-<div class="span10">
-<span class="btn-group" data-prop="flex-direction" data-target=".flex-container" data-toggle="buttons-radio">
-	<button class="btn active">(none)</button>
-	<button class="btn btn-info">row</button>
-	<button class="btn">row-reverse</button>
-	<button class="btn">column</button>
-	<button class="btn">column-reverse</button>
-</span>
-</div>
-</div>
-
-<div class="row">
-<div class="span2 prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#flex-wrap">flex-wrap</a></div>
-<div class="span10">
-<span class="btn-group" data-prop="flex-wrap" data-target=".flex-container" data-toggle="buttons-radio">
-	<button class="btn active">(none)</button>
-	<button class="btn btn-info">nowrap</button>
-	<button class="btn">wrap</button>
-	<button class="btn">wrap-reverse</button>
-</span>
-</div>
-</div>
-
-<div class="row">
-<div class="span2 prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#justify-content">justify-content</a></div>
-<div class="span10">
-<span class="btn-group" data-prop="justify-content" data-target=".flex-container" data-toggle="buttons-radio">
-	<button class="btn active">(none)</button>
-	<button class="btn btn-info">flex-start</button>
-	<button class="btn">flex-end</button>
-	<button class="btn">center</button>
-	<button class="btn">space-between</button>
-	<button class="btn">space-around</button>
-</span>
-</div>
-</div>
-
-<div class="row">
-<div class="span2 prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#align-items">align-items</a></div>
-<div class="span10">
-<span class="btn-group" data-prop="align-items" data-target=".flex-container" data-toggle="buttons-radio">
-	<button class="btn active">(none)</button>
-	<button class="btn">flex-start</button>
-	<button class="btn">flex-end</button>
-	<button class="btn">center</button>
-	<button class="btn">baseline</button>
-	<button class="btn btn-info">stretch</button>
-</span>
-</div>
-</div>
+<div id="container_props"></div>
 
 <h2>Flex items property</h2>
-<div class="row">
-<div class="span2 prop-name">(A) <a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#align-self">align-self</a></div>
-<div class="span10">
-<span class="btn-group" data-prop="align-self" data-target=".A" data-toggle="buttons-radio">
-	<button class="btn active">(none)</button>
-	<button class="btn btn-info">auto</button>
-	<button class="btn">flex-start</button>
-	<button class="btn">flex-end</button>
-	<button class="btn">center</button>
-	<button class="btn">baseline</button>
-	<button class="btn">stretch</button>
-</span>
-<span class="prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#flex">flex</a></span>
-<input type="text" class="prop-text" size="8" value="none" data-prop="flex" data-target=".A"></input>
-<span class="prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#order">order</a></span>
-<input type="text" class="prop-text" size="2" value="0" data-prop="order" data-target=".A"></input>
-</div>
-</div>
-
-<div class="row">
-<div class="span2 prop-name">(B) <a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#align-self">align-self</a></div>
-<div class="span10">
-<span class="btn-group" data-prop="align-self" data-target=".B" data-toggle="buttons-radio">
-	<button class="btn active">(none)</button>
-	<button class="btn btn-info">auto</button>
-	<button class="btn">flex-start</button>
-	<button class="btn">flex-end</button>
-	<button class="btn">center</button>
-	<button class="btn">baseline</button>
-	<button class="btn">stretch</button>
-</span>
-<span class="prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#flex">flex</a></span>
-<input type="text" class="prop-text" size="8" value="none" data-prop="flex" data-target=".B"></input>
-<span class="prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#order">order</a></span>
-<input type="text" class="prop-text" size="2" value="0" data-prop="order" data-target=".B"></input>
-</div>
-</div>
-
-<div class="row">
-<div class="span2 prop-name">(C) <a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#align-self">align-self</a></div>
-<div class="span10">
-<span class="btn-group" data-prop="align-self" data-target=".C" data-toggle="buttons-radio">
-	<button class="btn active">(none)</button>
-	<button class="btn btn-info">auto</button>
-	<button class="btn">flex-start</button>
-	<button class="btn">flex-end</button>
-	<button class="btn">center</button>
-	<button class="btn">baseline</button>
-	<button class="btn">stretch</button>
-</span>
-<span class="prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#flex">flex</a></span>
-<input type="text" class="prop-text" size="8" value="none" data-prop="flex" data-target=".C"></input>
-<span class="prop-name"><a href="http://www.w3.org/TR/2012/WD-css3-flexbox-20120612/#order">order</a></span>
-<input type="text" class="prop-text" size="2" value="0" data-prop="order" data-target=".C"></input>
-</div>
-</div>
-
+<div id="items_props"></div>
 </body>
 </html>
-
